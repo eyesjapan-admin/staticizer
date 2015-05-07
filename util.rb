@@ -14,8 +14,19 @@ end
 
 
 # http://example.com/?q=hoge&page=1 -> http://example.com/_q=hoge&page=1
-def remove_queries(url_including_query)
+def remove_query(url_including_query)
   url_including_query.gsub(/\?/, '_')
+end
+
+
+# http://example.com/#hoge -> http://example.com/
+def remove_fragment(url_including_fragment)
+  uri = URI.parse(url_including_fragment)
+  if uri.query
+    return "#{uri.scheme}://#{uri.host}#{uri.path}?#{uri.query}"
+  else
+    return "#{uri.scheme}://#{uri.host}#{uri.path}"
+  end
 end
 
 

@@ -5,7 +5,7 @@ require 'ruby-wpdb'
 require 'aws-sdk'
 require 'nokogiri'
 
-require './util' # get_redirected_url, remove_queries, convert_site_url, calc_s3object_key
+require './util' # get_redirected_url, remove_query, convert_site_url, calc_s3object_key
 
 Dotenv.load
 
@@ -29,23 +29,33 @@ post_s3objects = post_urls.map do |post_url|
   post_nokogiried = Nokogiri::HTML(post_html)
 
   post_nokogiried.xpath("//a[starts-with(@href, '#{source_site_url}')]/@href").each do |attr|
-    attr.value = remove_queries(convert_site_url(source_site_url, target_site_url, attr.value))
+    attr.value = remove_query(convert_site_url(source_site_url, target_site_url, attr.value))
   end
 
   post_nokogiried.xpath("//script[starts-with(@src, '#{source_site_url}')]/@src").each do |attr|
-    attr.value = remove_queries(convert_site_url(source_site_url, target_site_url, attr.value))
+    attr.value = remove_query(convert_site_url(source_site_url, target_site_url, attr.value))
   end
 
   post_nokogiried.xpath("//link[@rel='stylesheet'][starts-with(@href, '#{source_site_url}')]/@href").each do |attr|
-    attr.value = remove_queries(convert_site_url(source_site_url, target_site_url, attr.value))
+    attr.value = remove_query(convert_site_url(source_site_url, target_site_url, attr.value))
   end
 
   post_nokogiried.xpath("//img[starts-with(@src, '#{source_site_url}')]/@src").each do |attr|
-    attr.value = remove_queries(convert_site_url(source_site_url, target_site_url, attr.value))
+    attr.value = remove_query(convert_site_url(source_site_url, target_site_url, attr.value))
   end
 
   { key: calc_s3object_key(source_site_url, post_url), body: post_nokogiried.to_html }
 end
+
+
+attachment_urls = WPDB::Post.all
+  .select{ |post| post.post_type == 'attachment' }
+  .map{ |post| get_redirected_url(post.guid) }
+  .select{ |post_url| post_url.start_with?(source_site_url) }
+
+attachment_s3objects = attachment_urls.map{ |attachment_url|
+  { key: calc_s3object_key(source_site_url, remove_query(attachment_url)), body: open(attachment_url).read }
+}
 
 
 other_urls = post_urls.map{ |post_url|
@@ -60,11 +70,11 @@ other_urls = post_urls.map{ |post_url|
 }.flatten(1).uniq
 
 other_s3objects = other_urls.map{ |other_url|
-  { key: calc_s3object_key(source_site_url, remove_queries(other_url)), body: open(other_url).read }
+  { key: calc_s3object_key(source_site_url, remove_query(other_url)), body: open(other_url).read }
 }
 
 
-s3objects = post_s3objects + other_s3objects
+s3objects = post_s3objects + attachment_s3objects + other_s3objects
 
 
 s3 = Aws::S3::Resource.new
