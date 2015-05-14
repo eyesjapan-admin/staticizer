@@ -37,6 +37,13 @@ end
 
 
 # http://example.com/hoge/piyo/fuga.txt -> hoge/piyo/fuga.txt
+# http://example.com/hoge/piyo/ -> hoge/piyo/index.html
 def calc_s3object_key(site_url, url)
-  return url[(site_url.length + 1) .. -1]
+  site_url_omitted_url = url[(site_url.length + 1) .. -1]
+
+  if site_url_omitted_url.end_with?('/')
+    return site_url_omitted_url + 'index.html'
+  else
+    return site_url_omitted_url
+  end
 end
