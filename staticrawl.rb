@@ -19,10 +19,12 @@ end
 
 source_site_url = WPDB::Option.get_option('siteurl')
 target_site_url = ENV['TARGET_SITE_URL']
+cdn_site_url = ENV['CDN_SITE_URL']
 
 
 uncrawled_urls = [source_site_url + '/']
 crawled_urls = {}
+static_file_urls = []
 s3objects = []
 
 
@@ -42,24 +44,25 @@ while uncrawled_urls.length > 0 do
     stylesheet_urls = nokogiried.xpath("//link  [starts-with(@href, '#{source_site_url}')][@rel='stylesheet']/@href").map{ |attr| attr.value }
     image_urls      = nokogiried.xpath("//img   [starts-with(@src,  '#{source_site_url}')]                   /@src") .map{ |attr| attr.value }
 
-    new_uncrawled_urls = (ahref_urls + javascript_urls + stylesheet_urls + image_urls).map{ |url| remove_fragment(url) }.reject{ |url| crawled_urls[url] }
-
+    new_uncrawled_urls = ahref_urls.map{ |url| remove_fragment(url) }.reject{ |url| crawled_urls[url] }
     uncrawled_urls.concat(new_uncrawled_urls).uniq!
+
+    static_file_urls.concat(javascript_urls + stylesheet_urls + image_urls).uniq!
 
     nokogiried.xpath("//a[starts-with(@href, '#{source_site_url}')]/@href").each do |attr|
       attr.value = remove_query(convert_site_url(source_site_url, target_site_url, attr.value))
     end
 
     nokogiried.xpath("//script[starts-with(@src, '#{source_site_url}')]/@src").each do |attr|
-      attr.value = remove_query(convert_site_url(source_site_url, target_site_url, attr.value))
+      attr.value = remove_query(convert_site_url(source_site_url, cdn_site_url, attr.value))
     end
 
     nokogiried.xpath("//link[@rel='stylesheet'][starts-with(@href, '#{source_site_url}')]/@href").each do |attr|
-      attr.value = remove_query(convert_site_url(source_site_url, target_site_url, attr.value))
+      attr.value = remove_query(convert_site_url(source_site_url, cdn_site_url, attr.value))
     end
 
     nokogiried.xpath("//img[starts-with(@src, '#{source_site_url}')]/@src").each do |attr|
-      attr.value = remove_query(convert_site_url(source_site_url, target_site_url, attr.value))
+      attr.value = remove_query(convert_site_url(source_site_url, cdn_site_url, attr.value))
     end
 
     s3objects << { key: calc_s3object_key(source_site_url, remove_query(crawling_url)), body: nokogiried.to_html }
@@ -67,6 +70,9 @@ while uncrawled_urls.length > 0 do
     s3objects << { key: calc_s3object_key(source_site_url, remove_query(crawling_url)), body: response.body }
   end
 end
+
+
+static_file_objects = static_file_urls.map{ |url| puts url; { key: calc_s3object_key(source_site_url, remove_query(url)), body: Net::HTTP.get_response(URI.parse(url)).body } }
 
 
 s3 = Aws::S3::Resource.new
@@ -78,4 +84,9 @@ s3objects.each do |s3object|
   else
     bucket.object(s3object[:key]).put(body: s3object[:body])
   end
+end
+
+
+static_file_objects.each do |static_file_object|
+  # upload static files to a CDN server
 end
