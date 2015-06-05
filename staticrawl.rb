@@ -77,24 +77,29 @@ while uncrawled_urls.length > 0 do
 end
 
 
-static_file_objects = static_file_urls.map{ |url| puts "Downloading #{url}"; { key: calc_s3object_key(source_site_url, remove_query(url)), body: Net::HTTP.get_response(URI.parse(url)).body } }
+static_file_objects = static_file_urls.map.with_index(1){ |url, index|
+  puts "Downloading(#{index}/#{static_file_urls.size}) #{url}"
+  { key: calc_s3object_key(source_site_url, remove_query(url)), body: Net::HTTP.get_response(URI.parse(url)).body }
+}
 
 
 s3 = Aws::S3::Resource.new
 bucket = s3.bucket(ENV['AWS_S3_BUCKET'])
 
-s3objects.each do |s3object|
+num_objects = s3objects.size + static_file_objects.size
+
+s3objects.each.with_index(1) do |s3object, index|
   if s3object[:key] == ""
-    puts 'Uploading index.html'
+    puts "Uploading(#{index}/#{num_objects}) index.html"
     bucket.object("index.html").put(body: s3object[:body])
   else
-    puts "Uploading #{s3object[:key]}"
+    puts "Uploading(#{index}/#{num_objects}) #{s3object[:key]}"
     bucket.object(s3object[:key]).put(body: s3object[:body])
   end
 end
 
 
-static_file_objects.each do |static_file_object|
-  puts "Uploading #{static_file_object[:key]}"
+static_file_objects.each.with_index(1) do |static_file_object, index|
+  puts "Uploading(#{index + s3objects.size}/#{num_objects}) #{static_file_object[:key]}"
   bucket.object('cdn/' + static_file_object[:key]).put(body: static_file_object[:body])
 end
