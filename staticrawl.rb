@@ -28,7 +28,7 @@ end
 
 
 uncrawled_urls = [source_site_url + '/']
-crawled_urls = {}
+crawled_urls = {source_site_url => true}
 static_file_urls = []
 s3objects = []
 
