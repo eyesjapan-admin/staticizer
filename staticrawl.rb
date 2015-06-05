@@ -93,5 +93,5 @@ end
 
 
 static_file_objects.each do |static_file_object|
-  # upload static files to a CDN server
+  bucket.object('cdn/' + static_file_object[:key]).put(body: static_file_object[:body])
 end
