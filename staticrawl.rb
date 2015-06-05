@@ -37,7 +37,7 @@ while uncrawled_urls.length > 0 do
   crawling_url = uncrawled_urls.shift
   crawled_urls[crawling_url] = true
 
-  puts crawling_url
+  puts 'Crawling ' + crawling_url
 
   response = Net::HTTP.get_response(URI.parse(crawling_url))
 
@@ -77,7 +77,7 @@ while uncrawled_urls.length > 0 do
 end
 
 
-static_file_objects = static_file_urls.map{ |url| puts url; { key: calc_s3object_key(source_site_url, remove_query(url)), body: Net::HTTP.get_response(URI.parse(url)).body } }
+static_file_objects = static_file_urls.map{ |url| puts "Downloading #{url}"; { key: calc_s3object_key(source_site_url, remove_query(url)), body: Net::HTTP.get_response(URI.parse(url)).body } }
 
 
 s3 = Aws::S3::Resource.new
@@ -85,13 +85,16 @@ bucket = s3.bucket(ENV['AWS_S3_BUCKET'])
 
 s3objects.each do |s3object|
   if s3object[:key] == ""
+    puts 'Uploading index.html'
     bucket.object("index.html").put(body: s3object[:body])
   else
+    puts "Uploading #{s3object[:key]}"
     bucket.object(s3object[:key]).put(body: s3object[:body])
   end
 end
 
 
 static_file_objects.each do |static_file_object|
+  puts "Uploading #{static_file_object[:key]}"
   bucket.object('cdn/' + static_file_object[:key]).put(body: static_file_object[:body])
 end
