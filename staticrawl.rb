@@ -22,6 +22,11 @@ target_site_url = ENV['TARGET_SITE_URL']
 cdn_site_url = ENV['CDN_SITE_URL']
 
 
+if source_site_url.end_with?('/')
+  source_site_url = source_site_url[0..-2]
+end
+
+
 uncrawled_urls = [source_site_url + '/']
 crawled_urls = {}
 static_file_urls = []
