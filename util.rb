@@ -47,3 +47,9 @@ def calc_s3object_key(site_url, url)
     return site_url_omitted_url
   end
 end
+
+
+# "p.hoge { background-image: url(\"../img/hoge.png\"); } p.piyo { background-image: url('http://www.example.com/img/piyo.png'); }" -> ["../img/hoge.png", "http://www.example.com/img/piyo.png"]
+def extract_urls_from_css(css_content)
+  css_content.scan(/url\(['"](.*?)['"]\)/).flatten
+end
