@@ -2,7 +2,6 @@ require 'net/http'
 require 'uri'
 
 require 'dotenv'
-require 'ruby-wpdb'
 require 'aws-sdk'
 require 'nokogiri'
 
@@ -11,20 +10,15 @@ require './util' # remove_query, remove_fragment, convert_site_url, calc_s3objec
 
 Dotenv.load
 
-if ENV['WP_CONFIG_PATH'] != ""
-  WPDB.from_config(ENV['WP_CONFIG_PATH'])
-else
-  WPDB.init("mysql2://#{ENV['DATABASE_USER']}:#{ENV['DATABASE_PASSWORD']}@#{ENV['DATABASE_HOST']}/#{ENV['DATABASE_NAME']}")
-end
 
-source_site_url = WPDB::Option.get_option('siteurl')
+source_site_url = ENV['SOURCE_SITE_URL']
 target_site_url = ENV['TARGET_SITE_URL']
 cdn_site_url = ENV['CDN_SITE_URL']
 
 
-if source_site_url.end_with?('/')
-  source_site_url = source_site_url[0..-2]
-end
+source_site_url = source_site_url[0..-2] if source_site_url.end_with?('/')
+target_site_url = target_site_url[0..-2] if target_site_url.end_with?('/')
+cdn_site_url =    cdn_site_url[0..-2]    if cdn_site_url.end_with?('/')
 
 
 uncrawled_urls = [source_site_url + '/']
