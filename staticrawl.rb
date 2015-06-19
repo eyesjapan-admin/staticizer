@@ -91,7 +91,7 @@ static_file_objects = static_file_urls.map.with_index(1){ |url, index|
 }
 
 
-
+Aws.use_bundled_cert!
 s3 = Aws::S3::Resource.new
 bucket = s3.bucket(ENV['AWS_S3_BUCKET'])
 
