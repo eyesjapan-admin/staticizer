@@ -3,7 +3,7 @@
 ## Requirements
 
 - ruby
-- libmysqlclient
+- libiconv
 
 ## Installation
 
