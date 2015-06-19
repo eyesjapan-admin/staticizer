@@ -66,6 +66,10 @@ while uncrawled_urls.length > 0 do
       attr.value = remove_query(convert_site_url(source_site_url, cdn_site_url, attr.value))
     end
 
+    nokogiried.xpath("//base[starts-with(@href, '#{source_site_url}')]/@href").each do |attr|
+      attr.value = remove_query(convert_site_url(source_site_url, target_site_url, attr.value))
+    end
+
     s3objects << { key: calc_s3object_key(source_site_url, remove_query(crawling_url)), body: nokogiried.to_html }
   else
     s3objects << { key: calc_s3object_key(source_site_url, remove_query(crawling_url)), body: response.body }
