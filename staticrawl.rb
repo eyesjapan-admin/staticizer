@@ -34,15 +34,17 @@ while uncrawled_urls.length > 0 do
 
   puts 'Crawling ' + crawling_url
 
-  response = Net::HTTP.get_response(URI.parse(crawling_url))
+  parsed_crawling_url = URI.parse crawling_url
+
+  response = Net::HTTP.get_response parsed_crawling_url
 
   if response['content-type'].start_with?('text/html')
     nokogiried = Nokogiri::HTML(response.body)
 
-    ahref_urls      = nokogiried.xpath("//a     [starts-with(@href, '#{source_site_url}')]                   /@href").map{ |attr| attr.value }
-    javascript_urls = nokogiried.xpath("//script[starts-with(@src,  '#{source_site_url}')]                   /@src") .map{ |attr| attr.value }
-    stylesheet_urls = nokogiried.xpath("//link  [starts-with(@href, '#{source_site_url}')][@rel='stylesheet']/@href").map{ |attr| attr.value }
-    image_urls      = nokogiried.xpath("//img   [starts-with(@src,  '#{source_site_url}')]                   /@src") .map{ |attr| attr.value }
+    ahref_urls      = nokogiried.xpath("//a                      /@href").select{ |attr| attr.value.start_with?(source_site_url) or URI.parse(attr.value).relative? }.map{ |attr| (parsed_crawling_url + attr.value).to_s }
+    javascript_urls = nokogiried.xpath("//script                 /@src") .select{ |attr| attr.value.start_with?(source_site_url) or URI.parse(attr.value).relative? }.map{ |attr| (parsed_crawling_url + attr.value).to_s }
+    stylesheet_urls = nokogiried.xpath("//link[@rel='stylesheet']/@href").select{ |attr| attr.value.start_with?(source_site_url) or URI.parse(attr.value).relative? }.map{ |attr| (parsed_crawling_url + attr.value).to_s }
+    image_urls      = nokogiried.xpath("//img                    /@src") .select{ |attr| attr.value.start_with?(source_site_url) or URI.parse(attr.value).relative? }.map{ |attr| (parsed_crawling_url + attr.value).to_s }
 
     new_uncrawled_urls = ahref_urls.map{ |url| remove_fragment(url) }.reject{ |url| crawled_urls[url] }
     uncrawled_urls.concat(new_uncrawled_urls).uniq!
@@ -50,24 +52,24 @@ while uncrawled_urls.length > 0 do
     static_file_urls.concat(javascript_urls + image_urls).uniq!
     css_file_urls.concat(stylesheet_urls).uniq!
 
-    nokogiried.xpath("//a[starts-with(@href, '#{source_site_url}')]/@href").each do |attr|
-      attr.value = remove_query(convert_site_url(source_site_url, target_site_url, attr.value))
+    nokogiried.xpath("//a/@href").select{ |attr| attr.value.start_with?(source_site_url) or URI.parse(attr.value).relative? }.each do |attr|
+      attr.value = remove_query(convert_site_url(source_site_url, target_site_url, (parsed_crawling_url + attr.value).to_s))
     end
 
-    nokogiried.xpath("//script[starts-with(@src, '#{source_site_url}')]/@src").each do |attr|
-      attr.value = remove_query(convert_site_url(source_site_url, cdn_site_url, attr.value))
+    nokogiried.xpath("//script/@src").select{ |attr| attr.value.start_with?(source_site_url) or URI.parse(attr.value).relative? }.each do |attr|
+      attr.value = remove_query(convert_site_url(source_site_url, cdn_site_url, (parsed_crawling_url + attr.value).to_s))
     end
 
-    nokogiried.xpath("//link[@rel='stylesheet'][starts-with(@href, '#{source_site_url}')]/@href").each do |attr|
-      attr.value = remove_query(convert_site_url(source_site_url, cdn_site_url, attr.value))
+    nokogiried.xpath("//link[@rel='stylesheet']/@href").select{ |attr| attr.value.start_with?(source_site_url) or URI.parse(attr.value).relative? }.each do |attr|
+      attr.value = remove_query(convert_site_url(source_site_url, cdn_site_url, (parsed_crawling_url + attr.value).to_s))
     end
 
-    nokogiried.xpath("//img[starts-with(@src, '#{source_site_url}')]/@src").each do |attr|
-      attr.value = remove_query(convert_site_url(source_site_url, cdn_site_url, attr.value))
+    nokogiried.xpath("//img/@src").select{ |attr| attr.value.start_with?(source_site_url) or URI.parse(attr.value).relative? }.each do |attr|
+      attr.value = remove_query(convert_site_url(source_site_url, cdn_site_url, (parsed_crawling_url + attr.value).to_s))
     end
 
-    nokogiried.xpath("//base[starts-with(@href, '#{source_site_url}')]/@href").each do |attr|
-      attr.value = remove_query(convert_site_url(source_site_url, target_site_url, attr.value))
+    nokogiried.xpath("//base/@href").select{ |attr| attr.value.start_with?(source_site_url) or URI.parse(attr.value).relative? }.each do |attr|
+      attr.value = remove_query(convert_site_url(source_site_url, target_site_url, (parsed_crawling_url + attr.value).to_s))
     end
 
     s3objects << { key: calc_s3object_key(source_site_url, remove_query(crawling_url)), body: nokogiried.to_html }

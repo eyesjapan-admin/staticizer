@@ -32,7 +32,11 @@ end
 
 # http://source.example.com/hoge/piyo -> http://target.example.com/hoge/piyo
 def convert_site_url(source_site_url, target_site_url, url)
-  return target_site_url + url[source_site_url.length .. -1]
+  if url.start_with?(source_site_url)
+    return target_site_url + url[source_site_url.length .. -1]
+  else
+    return url
+  end
 end
 
 
@@ -51,5 +55,5 @@ end
 
 # "p.hoge { background-image: url(\"../img/hoge.png\"); } p.piyo { background-image: url('http://www.example.com/img/piyo.png'); }" -> ["../img/hoge.png", "http://www.example.com/img/piyo.png"]
 def extract_urls_from_css(css_content)
-  css_content.scan(/url\(['"](.*?)['"]\)/).flatten
+  return css_content.scan(/url\(['"](.*?)['"]\)/).flatten
 end
