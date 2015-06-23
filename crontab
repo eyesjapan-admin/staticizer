@@ -1,0 +1,2 @@
+* * * * * root cd / && ruby staticize.rb >> /var/log/staticizer.log 2>&1
+
