@@ -38,7 +38,9 @@ while uncrawled_urls.length > 0 do
 
   response = Net::HTTP.get_response parsed_crawling_url
 
-  if response['content-type'].start_with?('text/html')
+  if response['content-type'].nil?
+    next
+  elsif response['content-type'].start_with?('text/html')
     nokogiried = Nokogiri::HTML(response.body)
 
     ahref_nodes      = nokogiried.xpath("//a                       /@href").select{ |node| node.value.start_with?(source_site_url) or URI.parse(URI.encode(node.value)).relative? }
