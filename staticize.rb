@@ -96,6 +96,7 @@ static_file_objects = static_file_urls.map.with_index(1){ |url, index|
 
 
 Aws.use_bundled_cert!
+Aws.config.update({access_key_id: ENV['AWS_ACCESS_KEY_ID'], secret_access_key: ENV['AWS_SECRET_ACCESS_KEY'], region: ENV['AWS_REGION']})
 s3 = Aws::S3::Resource.new
 bucket = s3.bucket(ENV['AWS_S3_BUCKET'])
 
@@ -112,13 +113,15 @@ s3objects.each.with_index(1) do |s3object, index|
 end
 
 
+Aws.config.update({access_key_id: ENV['CDN_AWS_ACCESS_KEY_ID'], secret_access_key: ENV['CDN_AWS_SECRET_ACCESS_KEY'], region: ENV['CDN_AWS_REGION']})
+bucket = s3.bucket(ENV['CDN_AWS_S3_BUCKET'])
 static_file_objects.each.with_index(1) do |static_file_object, index|
   puts "Uploading(#{index + s3objects.size}/#{num_objects}) #{static_file_object[:key]}"
-  bucket.object('cdn/' + static_file_object[:key]).put(body: static_file_object[:body])
+  bucket.object(static_file_object[:key]).put(body: static_file_object[:body])
 end
 
 
 css_file_objects.each.with_index(1) do |css_file_object, index|
   puts "Uploading(#{index + s3objects.size + static_file_objects.size}/#{num_objects}) #{css_file_object[:key]}"
-  bucket.object('cdn/' + css_file_object[:key]).put(body: css_file_object[:body])
+  bucket.object(css_file_object[:key]).put(body: css_file_object[:body])
 end
