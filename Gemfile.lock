@@ -1,6 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    addressable (2.3.8)
     aws-sdk (2.1.1)
       aws-sdk-resources (= 2.1.1)
     aws-sdk-core (2.1.1)
@@ -19,6 +20,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  addressable
   aws-sdk
   dotenv
   nokogiri

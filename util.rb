@@ -1,8 +1,9 @@
 require 'net/http'
-require 'uri'
+
+require 'addressable/uri'
 
 def get_redirected_url(unredirected_url)
-  response = Net::HTTP.get_response(URI.parse(unredirected_url))
+  response = Net::HTTP.get_response(Addressable::URI.parse(unredirected_url))
 
   case response
   when Net::HTTPRedirection
@@ -21,7 +22,7 @@ end
 
 # http://example.com/#hoge -> http://example.com/
 def remove_fragment(url_including_fragment)
-  uri = URI.parse(url_including_fragment)
+  uri = Addressable::URI.parse(url_including_fragment)
   if uri.query
     return "#{uri.scheme}://#{uri.host}#{uri.path}?#{uri.query}"
   else
