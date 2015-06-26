@@ -48,13 +48,19 @@ while uncrawled_urls.length > 0 do
     image_nodes      = nokogiried.xpath("//img                     /@src") .select{ |node| node.value.start_with?(source_site_url) or Addressable::URI.parse(node.value).relative? }
     css_nodes        = nokogiried.xpath("//link[@rel='stylesheet'] /@href").select{ |node| node.value.start_with?(source_site_url) or Addressable::URI.parse(node.value).relative? }
     prefetch_nodes   = nokogiried.xpath("//link[@rel='sz-prefetch']/@href").select{ |node| node.value.start_with?(source_site_url) or Addressable::URI.parse(node.value).relative? }
-    base_nodes       = nokogiried.xpath("//base                    /@href").select{ |node| node.value.start_with?(source_site_url) or Addressable::URI.parse(node.value).relative? }
+    base_nodes       = nokogiried.xpath("//base                    /@href").select{ |node| node.value.start_with?(source_site_url) }
 
-    ahref_urls      = ahref_nodes     .map{ |node| parsed_crawling_url.join(node.value).to_s }
-    javascript_urls = javascript_nodes.map{ |node| parsed_crawling_url.join(node.value).to_s }
-    css_urls        = css_nodes       .map{ |node| parsed_crawling_url.join(node.value).to_s }
-    image_urls      = image_nodes     .map{ |node| parsed_crawling_url.join(node.value).to_s }
-    prefetch_urls   = prefetch_nodes  .map{ |node| parsed_crawling_url.join(node.value).to_s }
+    if base_nodes.size > 0
+      base_url = Addressable::URI.parse(base_nodes[-1].value)
+    else
+      base_url = parsed_crawling_url
+    end
+
+    ahref_urls      = ahref_nodes     .map{ |node| base_url.join(node.value).to_s }
+    javascript_urls = javascript_nodes.map{ |node| base_url.join(node.value).to_s }
+    css_urls        = css_nodes       .map{ |node| base_url.join(node.value).to_s }
+    image_urls      = image_nodes     .map{ |node| base_url.join(node.value).to_s }
+    prefetch_urls   = prefetch_nodes  .map{ |node| base_url.join(node.value).to_s }
 
     new_uncrawled_urls = ahref_urls.map{ |url| remove_fragment(url) }.reject{ |url| crawled_urls[url] }
     uncrawled_urls.concat(new_uncrawled_urls).uniq!
@@ -62,12 +68,12 @@ while uncrawled_urls.length > 0 do
     static_file_urls.concat(javascript_urls + image_urls + prefetch_urls).uniq!
     css_urls_gathered.concat(css_urls).uniq!
 
-    (ahref_nodes + base_nodes).each do |node|
-      node.value = remove_query(convert_site_url(source_site_url, target_site_url, parsed_crawling_url.join(node.value).to_s))
+    ahref_nodes.each do |node|
+      node.value = remove_query(convert_site_url(source_site_url, target_site_url, base_url.join(node.value).to_s))
     end
 
-    (javascript_nodes + image_nodes + css_nodes + prefetch_nodes).each do |node|
-      node.value = remove_query(convert_site_url(source_site_url, cdn_site_url, parsed_crawling_url.join(node.value).to_s))
+    (javascript_nodes + image_nodes + css_nodes + prefetch_nodes + base_nodes).each do |node|
+      node.value = remove_query(convert_site_url(source_site_url, cdn_site_url, base_url.join(node.value).to_s))
     end
 
     s3objects << { key: calc_s3object_key(source_site_url, remove_query(crawling_url)), body: nokogiried.to_html }
