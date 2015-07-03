@@ -27,8 +27,12 @@ static_file_urls = []
 css_urls_gathered = []
 s3objects = []
 
+interval = ENV['INTERVAL_MS'].to_f / 1000
+
 
 while uncrawled_urls.length > 0 do
+  sleep interval
+
   crawling_url = uncrawled_urls.shift
   crawled_urls[crawling_url] = true
 
@@ -84,6 +88,8 @@ end
 
 
 css_file_objects = css_urls_gathered.map.with_index(1) { |url, index|
+  sleep interval
+
   puts 'Crawling ' + url
   parsed_url = Addressable::URI.parse url
 
@@ -96,6 +102,8 @@ css_file_objects = css_urls_gathered.map.with_index(1) { |url, index|
 }
 
 static_file_objects = static_file_urls.map.with_index(1){ |url, index|
+  sleep interval
+
   puts "Downloading(#{index}/#{static_file_urls.size}) #{url}"
   { key: calc_s3object_key(source_site_url, remove_query(url)), body: Net::HTTP.get_response(Addressable::URI.parse(url)).body }
 }
