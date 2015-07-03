@@ -88,7 +88,7 @@ css_file_objects = css_urls_gathered.map.with_index(1) { |url, index|
   parsed_url = Addressable::URI.parse url
 
   css_content = Net::HTTP.get_response(Addressable::URI.parse(url)).body
-  urls_in_css = extract_urls_from_css(css_content).map{ |url| (parsed_url + url).to_s }
+  urls_in_css = extract_urls_from_css(css_content).map{ |url| parsed_url.join(url).to_s }.select{ |url| url.start_with?(source_site_url) }
 
   static_file_urls.concat(urls_in_css).uniq!
 
