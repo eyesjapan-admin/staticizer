@@ -47,12 +47,12 @@ while uncrawled_urls.length > 0 do
   elsif response['content-type'].start_with?('text/html')
     nokogiried = Nokogiri::HTML(response.body)
 
-    ahref_nodes      = nokogiried.xpath("//a                       /@href").select{ |node| node.value.start_with?(source_site_url) or Addressable::URI.parse(node.value).relative? }
-    javascript_nodes = nokogiried.xpath("//script                  /@src") .select{ |node| node.value.start_with?(source_site_url) or Addressable::URI.parse(node.value).relative? }
-    image_nodes      = nokogiried.xpath("//img                     /@src") .select{ |node| node.value.start_with?(source_site_url) or Addressable::URI.parse(node.value).relative? }
-    css_nodes        = nokogiried.xpath("//link[@rel='stylesheet'] /@href").select{ |node| node.value.start_with?(source_site_url) or Addressable::URI.parse(node.value).relative? }
-    prefetch_nodes   = nokogiried.xpath("//link[@rel='sz-prefetch']/@href").select{ |node| node.value.start_with?(source_site_url) or Addressable::URI.parse(node.value).relative? }
-    base_nodes       = nokogiried.xpath("//base                    /@href").select{ |node| node.value.start_with?(source_site_url) }
+    ahref_nodes      = nokogiried.xpath("//a                       /@href").select{ |node| parsed_crawling_url.join(node.value).to_s.start_with?(source_site_url) }
+    javascript_nodes = nokogiried.xpath("//script                  /@src") .select{ |node| parsed_crawling_url.join(node.value).to_s.start_with?(source_site_url) }
+    image_nodes      = nokogiried.xpath("//img                     /@src") .select{ |node| parsed_crawling_url.join(node.value).to_s.start_with?(source_site_url) }
+    css_nodes        = nokogiried.xpath("//link[@rel='stylesheet'] /@href").select{ |node| parsed_crawling_url.join(node.value).to_s.start_with?(source_site_url) }
+    prefetch_nodes   = nokogiried.xpath("//link[@rel='sz-prefetch']/@href").select{ |node| parsed_crawling_url.join(node.value).to_s.start_with?(source_site_url) }
+    base_nodes       = nokogiried.xpath("//base                    /@href").select{ |node| parsed_crawling_url.join(node.value).to_s.start_with?(source_site_url) }
 
     if base_nodes.size > 0
       base_url = Addressable::URI.parse(base_nodes[-1].value)
