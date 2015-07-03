@@ -1,4 +1,4 @@
-require 'net/http'
+require 'open-uri'
 
 require 'dotenv'
 require 'aws-sdk'
@@ -40,12 +40,12 @@ while uncrawled_urls.length > 0 do
 
   parsed_crawling_url = Addressable::URI.parse crawling_url
 
-  response = Net::HTTP.get_response parsed_crawling_url
+  response = open parsed_crawling_url
 
-  if response['content-type'].nil?
+  if response.content_type.nil?
     next
-  elsif response['content-type'].start_with?('text/html')
-    nokogiried = Nokogiri::HTML(response.body)
+  elsif response.content_type.start_with?('text/html')
+    nokogiried = Nokogiri::HTML(response.read)
 
     ahref_nodes      = nokogiried.xpath("//a                       /@href").select{ |node| parsed_crawling_url.join(node.value).to_s.start_with?(source_site_url) }
     javascript_nodes = nokogiried.xpath("//script                  /@src") .select{ |node| parsed_crawling_url.join(node.value).to_s.start_with?(source_site_url) }
@@ -82,7 +82,7 @@ while uncrawled_urls.length > 0 do
 
     s3objects << { key: calc_s3object_key(source_site_url, remove_query(crawling_url)), body: nokogiried.to_html }
   else
-    s3objects << { key: calc_s3object_key(source_site_url, remove_query(crawling_url)), body: response.body }
+    s3objects << { key: calc_s3object_key(source_site_url, remove_query(crawling_url)), body: response.read }
   end
 end
 
@@ -93,7 +93,7 @@ css_file_objects = css_urls_gathered.map.with_index(1) { |url, index|
   puts 'Crawling ' + url
   parsed_url = Addressable::URI.parse url
 
-  css_content = Net::HTTP.get_response(Addressable::URI.parse(url)).body
+  css_content = open(Addressable::URI.parse(url)).read
   urls_in_css = extract_urls_from_css(css_content).map{ |url| parsed_url.join(url).to_s }.select{ |url| url.start_with?(source_site_url) }
 
   static_file_urls.concat(urls_in_css).uniq!
@@ -105,7 +105,7 @@ static_file_objects = static_file_urls.map.with_index(1){ |url, index|
   sleep interval
 
   puts "Downloading(#{index}/#{static_file_urls.size}) #{url}"
-  { key: calc_s3object_key(source_site_url, remove_query(url)), body: Net::HTTP.get_response(Addressable::URI.parse(url)).body }
+  { key: calc_s3object_key(source_site_url, remove_query(url)), body: open(Addressable::URI.parse(url)).read }
 }
 
 
