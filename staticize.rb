@@ -15,6 +15,9 @@ source_site_url = ENV['SOURCE_SITE_URL']
 target_site_url = ENV['TARGET_SITE_URL']
 cdn_site_url = ENV['CDN_SITE_URL']
 
+output_dir_html  ="#{ENV['PATH_OUTPUT_DIR']}/html"
+output_dir_cdn   ="#{ENV['PATH_OUTPUT_DIR']}/cdn"
+
 
 source_site_url = source_site_url[0..-2] if source_site_url.end_with?('/')
 target_site_url = target_site_url[0..-2] if target_site_url.end_with?('/')
@@ -118,11 +121,16 @@ num_objects = s3objects.size + static_file_objects.size + css_file_objects.size
 
 s3objects.each.with_index(1) do |s3object, index|
   if s3object[:key] == ""
-    puts "Uploading(#{index}/#{num_objects}) index.html"
-    bucket.object("index.html").put(body: s3object[:body])
+    FileUtils.mkdir_p("#{output_dir_html}") unless FileTest.exist?("#{output_dir_html}")
+    puts "Generating(#{index}/#{num_objects}) #{output_dir_html}/index.html"
+    File.open("#{output_dir_html}/index.html", "w") { |f| f.puts(s3object[:body]) }
+    #bucket.object("index.html").put(body: s3object[:body])
   else
-    puts "Uploading(#{index}/#{num_objects}) #{s3object[:key]}"
-    bucket.object(s3object[:key]).put(body: s3object[:body])
+    _path_save_dir  ="#{output_dir_html}/#{File.dirname(s3object[:key])}"
+    FileUtils.mkdir_p("#{_path_save_dir}") unless FileTest.exist?("#{_path_save_dir}")
+    puts "Generating(#{index}/#{num_objects}) #{output_dir_html}/#{s3object[:key]}"
+    File.open("#{output_dir_html}/#{s3object[:key]}", "w") { |f| f.puts(s3object[:body]) }
+    #bucket.object(s3object[:key]).put(body: s3object[:body])
   end
 end
 
@@ -130,12 +138,18 @@ end
 Aws.config.update({access_key_id: ENV['CDN_AWS_ACCESS_KEY_ID'], secret_access_key: ENV['CDN_AWS_SECRET_ACCESS_KEY'], region: ENV['CDN_AWS_REGION']})
 bucket = s3.bucket(ENV['CDN_AWS_S3_BUCKET'])
 static_file_objects.each.with_index(1) do |static_file_object, index|
-  puts "Uploading(#{index + s3objects.size}/#{num_objects}) #{static_file_object[:key]}"
-  bucket.object(static_file_object[:key]).put(body: static_file_object[:body])
+  _path_save_dir  ="#{output_dir_cdn}/#{File.dirname(static_file_object[:key])}"
+  FileUtils.mkdir_p("#{_path_save_dir}") unless FileTest.exist?("#{_path_save_dir}")
+  puts "Generating(#{index + s3objects.size}/#{num_objects}) #{output_dir_cdn}/#{static_file_object[:key]}"
+  File.open("#{output_dir_cdn}/#{static_file_object[:key]}", "wb") { |f| f.puts(static_file_object[:body]) }
+  #bucket.object(static_file_object[:key]).put(body: static_file_object[:body])
 end
 
 
 css_file_objects.each.with_index(1) do |css_file_object, index|
-  puts "Uploading(#{index + s3objects.size + static_file_objects.size}/#{num_objects}) #{css_file_object[:key]}"
-  bucket.object(css_file_object[:key]).put(body: css_file_object[:body])
+  _path_save_dir  ="#{output_dir_cdn}/#{File.dirname(css_file_object[:key])}"
+  FileUtils.mkdir_p("#{_path_save_dir}") unless FileTest.exist?("#{_path_save_dir}")
+  puts "Generating(#{index + s3objects.size + static_file_objects.size}/#{num_objects}) #{output_dir_cdn}/#{css_file_object[:key]}"
+  File.open("#{output_dir_cdn}/#{css_file_object[:key]}", "wb") { |f| f.puts(css_file_object[:body]) }
+  #bucket.object(css_file_object[:key]).put(body: css_file_object[:body])
 end
