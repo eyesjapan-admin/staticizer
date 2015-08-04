@@ -30,10 +30,11 @@ Pathname.glob(input_dir + '**' + '*').select(&:file?).each do |path|
   if path.extname == '.html'
     nokogiried = Nokogiri::HTML(path.open)
 
-    attrs = nokogiried.xpath('//@href | //@src').select{ |attr| belong_to?(source_site_url, attr.value) }
+    attrs = nokogiried.xpath('//@href | //@src | //@action | //@content | //@data-url').select{ |attr| belong_to?(source_site_url, attr.value) }
 
     attrs.each do |attr|
       attr_url = Addressable::URI.parse(attr.value)
+
       if attr.parent.name == 'a' and (attr_url.extname == '' or attr_url.extname == '.html')
         attr.value = convert_site_url(source_site_url, target_site_url, attr.value)
       else
